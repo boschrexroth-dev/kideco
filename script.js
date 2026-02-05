@@ -1,5 +1,5 @@
 const DASHBOARD_URL =
-  "https://boschrexrothdev.grafana.net/public-dashboards/ec700d63425c40f4a7f32d45a7adf332";
+  "https://boschrexrothdev.grafana.net/public-dashboards/b6273fb1c0be41ceb221e7a81577f1db";
 
 const INFLUX_URL =
   "https://us-east-1-1.aws.cloud2.influxdata.com/api/v2/write?org=kideco&bucket=monitoring_cloud&precision=s";
@@ -64,7 +64,7 @@ function openDashboard() {
     window.open(DASHBOARD_URL, "_blank");
     return;
   }
-  
+
   if (!dashboardOpened) {
     window.open(DASHBOARD_URL, "_blank");
     dashboardOpened = true;
