@@ -8,19 +8,14 @@ const INFLUX_TOKEN =
   "t7mHH51CeVE-GbG2SwRDEzcbjvsHFZw6PDJX78WQTEPFZYDdR_KgduTihf0sF2BFI54H3FEcAI4hMOCvhnmcqw==";
 
 let dashboardOpened = false;
-let locationSent = false; // ⬅️ biar cuma kirim sekali
+let trackingStarted = false;
 
 function escapeTag(value) {
   return value.replace(/[,= ]/g, "\\$&");
 }
 
-async function sendLocationOnce() {
+async function sendLocation() {
   const status = document.getElementById("status");
-
-  if (locationSent) {
-    status.innerText = "Location already sent ✔";
-    return;
-  }
 
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
@@ -42,8 +37,8 @@ async function sendLocationOnce() {
           body: lineProtocol
         });
 
-        locationSent = true;
-        status.innerText = `Location sent ✔ (${new Date().toLocaleTimeString()})`;
+        status.innerText =
+          `Tracking active ✔ (${new Date().toLocaleTimeString()})`;
       } catch (err) {
         console.error(err);
         status.innerText = "Failed to send location";
@@ -69,16 +64,16 @@ function openDashboard() {
     window.open(DASHBOARD_URL, "_blank");
     return;
   }
-
-  // 🔹 buka dashboard cuma sekali
+  
   if (!dashboardOpened) {
     window.open(DASHBOARD_URL, "_blank");
     dashboardOpened = true;
+  }
 
-    // 🔹 kirim koordinat sekali saja
-    status.innerText = "Sending location...";
-    sendLocationOnce();
-  } else {
-    status.innerText = "Dashboard already opened";
+  if (!trackingStarted) {
+    status.innerText = "Starting GPS tracking...";
+    sendLocation();
+    setInterval(sendLocation, 3000);
+    trackingStarted = true;
   }
 }
