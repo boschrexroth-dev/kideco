@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Bosch Rexroth Industrial Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="history.css">
+</head>
+<body>
+    <!-- Navigation Header -->
+    <div id="mainHeader" class="main-header">
+        <div class="logo">
+            <img src="bosch-rexroth.jpg"
+                 style="height:40px; vertical-align:middle; margin-right:8px;">
+            Bosch Rexroth Industrial Suite
+        </div>
+        <div class="header-nav">
+            <button class="nav-btn active" onclick="showArchitecture()">Architecture Designer</button>
+            <button class="nav-btn" onclick="showMonitoring()">Condition Monitoring</button>
+            <button class="nav-btn" onclick="showNotifications()">Alarms</button>
+            <button class="nav-btn" onclick="showHistory()">Historical Data</button>
+            <button class="nav-btn" onclick="exportAllConfiguration()">Export</button>
+            <input type="file" id="importFile" style="display:none" onchange="importAllConfiguration(this.files[0])" />
+            <button class="nav-btn" onclick="document.getElementById('importFile').click()">Import</button>
+        </div>
+    </div>
+
+    <!-- Architecture Designer Section -->
+    <div id="architectureSection" class="main-section active">
+        <div id="header" class="section-header">
+            <div class="section-title">Bosch Rexroth Structure</div>
+            <div class="header-controls">
+                <button class="btn" onclick="clearCanvas()">Clear All</button>
+                <button class="btn" onclick="toggleGrid()">Toggle Grid</button>
+            </div>
+        </div>
+
+        <div id="sidebar">
+            <div class="component-category">
+                <div class="category-title">Field Level</div>
+                <div class="component-item" draggable="true" data-type="Sensor" data-icon="sensor.png">
+                    <div class="component-icon"><img src="sensor.png" alt="Sensor" style="width:32px;height:32px;"></div>
+                    <div class="component-name">Sensor</div>
+                </div>
+                <div class="component-item" draggable="true" data-type="Electric Motor" data-icon="electric-motor.png">
+                    <div class="component-icon"><img src="electric-motor.png" alt="Electric Motor" style="width:32px;height:32px;"></div>
+                    <div class="component-name">Electric Motor</div>
+                </div>
+                <div class="component-item" draggable="true" data-type="Hydraulic Motor" data-icon="ctrlx-hidrolik-motor.jpg">
+                    <div class="component-icon"><img src="ctrlx-hidrolik-motor.jpg" alt="Hydraulic Motor" style="width:32px;height:32px;"></div>
+                    <div class="component-name">Hydraulic Motor</div>
+                </div>
+                <div class="component-item" draggable="true" data-type="Hydraulic Pump" data-icon="ctrlx-hidrolik-pump.jpg">
+                    <div class="component-icon"><img src="ctrlx-hidrolik-pump.jpg" alt="Hydraulic Pump" style="width:32px;height:32px;"></div>
+                    <div class="component-name">Hydraulic Pump</div>
+                </div>
+                <div class="component-item" draggable="true" data-type="Hydraulic Cylinder" data-icon="ctrlx-hidrolik-silinder.jpg">
+                    <div class="component-icon"><img src="ctrlx-hidrolik-silinder.jpg" alt="Hydraulic Cylinder" style="width:32px;height:32px;"></div>
+                    <div class="component-name">Hydraulic Cylinder</div>
+                </div>
+                <div class="component-item" draggable="true" data-type="VFD" data-icon="ctrlx-efc.png">
+                    <div class="component-icon"><img src="ctrlx-efc.png" alt="VFD" style="width:32px;height:32px;"></div>
+                    <div class="component-name">VFD</div>
+                </div>
+                <div class="component-item" draggable="true" data-type="CtrlX IO" data-icon="ctrlx-io.png">
+                    <div class="component-icon"><img src="ctrlx-io.png" alt="CtrlX IO" style="width:32px;height:32px;"></div>
+                    <div class="component-name">CtrlX IO</div>
+                </div>
+            </div>
+            <div class="component-category">
+                <div class="category-title">Control Level</div>
+                <div class="component-item" draggable="true" data-type="CtrlX Core" data-icon="ctrlx-core.png">
+                    <div class="component-icon"><img src="ctrlx-core.png" alt="CtrlX Core" style="width:32px;height:32px;"></div>
+                    <div class="component-name">CtrlX Core</div>
+                </div>
+                <div class="component-item" draggable="true" data-type="HMI" data-icon="ctrlx-hmi.png">
+                    <div class="component-icon"><img src="ctrlx-hmi.png" alt="HMI" style="width:32px;height:32px;"></div>
+                    <div class="component-name">HMI</div>
+                </div>
+            </div>
+            <div class="component-category">
+                <div class="category-title">Network &amp; Communication</div>
+                <div class="component-item" draggable="true" data-type="Industrial Router" data-icon="industrial-router.png">
+                    <div class="component-icon"><img src="industrial-router.png" alt="Industrial Router" style="width:32px;height:32px;"></div>
+                    <div class="component-name">Industrial Router</div>
+                </div>
+                <div class="component-item" draggable="true" data-type="Network Switch" data-icon="network-switch.png">
+                    <div class="component-icon"><img src="network-switch.png" alt="Network Switch" style="width:32px;height:32px;"></div>
+                    <div class="component-name">Network Switch</div>
+                </div>
+            </div>
+            <div class="component-category">
+                <div class="category-title">Enterprise Level</div>
+                <div class="component-item" draggable="true" data-type="Cloud" data-icon="☁️">
+                    <div class="component-icon">☁️</div>
+                    <div class="component-name">Cloud</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="canvas-container">
+            <div class="grid-overlay" id="grid"></div>
+            <canvas id="canvas"></canvas>
+            <svg id="connections" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></svg>
+        </div>
+
+        <div class="properties-panel" id="propertiesPanel">
+            <h3>Component Properties</h3>
+            <div class="property-group">
+                <label>Name</label>
+                <input type="text" id="componentName" placeholder="Component name">
+            </div>
+            <div class="property-group">
+                <label>Description</label>
+                <input type="text" id="componentDesc" placeholder="Description">
+            </div>
+            <div class="property-group">
+                <label>IP Address</label>
+                <input type="text" id="componentIP" placeholder="192.168.1.1">
+            </div>
+        </div>
+    </div>
+
+    <!-- Condition Monitoring Section -->
+    <div id="monitoringSection" class="main-section">
+        <div class="header monitoring-header">
+            <h1 class="logo">Condition Based Monitoring</h1>
+            <div class="status-bar">
+                <div class="system-status">
+                    <div class="status-indicator normal">
+                        <div class="status-dot" style="background:#4caf50;"></div>
+                        <span id="normalCount">0 Normal</span>
+                    </div>
+                    <div class="status-indicator critical">
+                        <div class="status-dot" style="background:#f44336;"></div>
+                        <span id="criticalCount">0 Critical</span>
+                    </div>
+                </div>
+                <div class="connection-status">
+                    <div class="connection-dot" id="connectionDot"></div>
+                    <span id="connectionStatus">Waiting for data...</span>
+                    <span style="color:#ccc;margin-left:10px;">Last Update: <span id="lastUpdate">Never</span></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="global-settings-bar" style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="openGlobalSettings()">Global Threshold Settings</button>
+            <button class="btn btn-secondary" onclick="openDataSourceModal()">Data Sources</button>
+        </div>
+
+        <div class="dashboard-grid" id="dashboardGrid"></div>
+
+        <div class="output-section" id="outputSection" style="display:none;">
+            <div class="output-header">
+                <h4>⚠️ System Alerts</h4>
+                <button class="btn btn-danger btn-sm" onclick="clearAlerts()" style="padding:4px 8px;font-size:12px;">Clear</button>
+            </div>
+            <div class="output-content" id="outputContent"></div>
+        </div>
+
+        <!-- Global Settings Modal -->
+        <div id="globalSettingsModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Global Threshold Settings</h2>
+                    <span class="close" onclick="closeGlobalSettings()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="global-settings">
+                        <div class="settings-section">
+                            <h3>Select Motor</h3>
+                            <select id="motorSelector"></select>
+                        </div>
+                        <div class="settings-section">
+                            <h3>Threshold Rules</h3>
+                            <div class="threshold-rules" id="thresholdRules"></div>
+                            <div class="add-rule-section">
+                                <h4>Add New Threshold Rule</h4>
+                                <div class="rule-form">
+                                    <div class="condition-builder">
+                                        <select id="newRuleData1"><option value="">Select Data 1</option></select>
+                                        <select id="newRuleOperator1">
+                                            <option>></option><option>&lt;</option><option>>=</option>
+                                            <option>&lt;=</option><option>==</option><option>!=</option>
+                                        </select>
+                                        <input type="number" id="newRuleValue1" placeholder="Value" step="0.1">
+                                        <select id="newRuleLogicalOperator">
+                                            <option>AND</option><option>OR</option><option>EQUAL</option>
+                                        </select>
+                                        <select id="newRuleData2"><option value="">Select Data 2</option></select>
+                                        <select id="newRuleOperator2">
+                                            <option>></option><option>&lt;</option><option>>=</option>
+                                            <option>&lt;=</option><option>==</option><option>!=</option>
+                                        </select>
+                                        <input type="number" id="newRuleValue2" placeholder="Value" step="0.1">
+                                    </div>
+                                    <div class="rule-output">
+                                        <label>Alert Message:</label>
+                                        <input type="text" id="newRuleMessage" placeholder="Enter alert message">
+                                    </div>
+                                    <div class="rule-color">
+                                        <label>Status Color:</label>
+                                        <select id="newRuleColor">
+                                            <option value="green">Green (Normal)</option>
+                                            <option value="yellow">Yellow (Warning)</option>
+                                            <option value="red">Red (Critical)</option>
+                                        </select>
+                                    </div>
+                                    <button class="btn btn-primary" onclick="addThresholdRule()">Add Rule</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="settings-section">
+                            <h3>Critical Threshold Settings</h3>
+                            <p style="color:#94a3b8;font-size:14px;margin-bottom:15px;">
+                                Critical thresholds are automatically determined from alert message rules above.
+                            </p>
+                            <div class="critical-settings" id="criticalSettings"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Sources Modal -->
+        <div id="dataSourceModal" class="modal">
+            <div class="modal-content" style="max-width:780px;">
+                <div class="modal-header">
+                    <h2 class="modal-title">Data Sources — MQTT Panels</h2>
+                    <span class="close" onclick="closeDataSourceModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+
+                    <!-- Broker connection -->
+                    <div style="background:#0f2537;border-radius:8px;padding:14px;margin-bottom:20px;">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                            <div id="mqttStatusDot" style="width:12px;height:12px;border-radius:50%;background:#f44336;flex-shrink:0;"></div>
+                            <span id="mqttStatusText" style="color:#94a3b8;font-size:13px;">Disconnected</span>
+                        </div>
+                        <div style="display:flex;gap:8px;">
+                            <input type="text" id="mqttBrokerUrl"
+                                   placeholder="wss://broker.hivemq.com:8884/mqtt"
+                                   style="flex:1;padding:8px;border-radius:6px;border:1px solid #3a5a7a;background:#1e3a5f;color:#fff;font-size:13px;">
+                            <button class="btn btn-primary" onclick="applyMqttBrokerSettings()">Connect</button>
+                        </div>
+                        <div style="margin-top:8px;color:#64b5f6;font-size:12px;">
+                            Telegraf: <code>tcp://broker.hivemq.com:1883</code> &nbsp;→&nbsp;
+                            Browser (WebSocket): <code>wss://broker.hivemq.com:8884/mqtt</code>
+                        </div>
+                    </div>
+
+                    <!-- Panel list (like Grafana variables) -->
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                        <h4 style="color:#fff;margin:0;">Panels (Variable per Field)</h4>
+                        <button class="btn btn-sm" onclick="renderPanelList()"
+                                style="padding:4px 10px;font-size:12px;background:#1e3a5f;">
+                            ↺ Refresh
+                        </button>
+                    </div>
+                    <div id="mqttTopicList" style="margin-bottom:20px;max-height:320px;overflow-y:auto;"></div>
+
+                    <!-- Add panel form -->
+                    <div style="background:#0f2537;border-radius:8px;padding:14px;">
+                        <h4 style="color:#94a3b8;margin:0 0 12px;">+ Tambah Panel Baru</h4>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+                            <div>
+                                <label style="color:#94a3b8;font-size:12px;display:block;margin-bottom:4px;">
+                                    MQTT Topic <span style="color:#f44336;">*</span>
+                                </label>
+                                <div style="display:flex;gap:6px;">
+                                    <input type="text" id="newMqttTopic"
+                                           placeholder="test/ctrlx"
+                                           style="flex:1;padding:8px;border-radius:6px;border:1px solid #3a5a7a;background:#1e3a5f;color:#fff;">
+                                    <button class="btn btn-sm" onclick="discoverFields()"
+                                            title="Show fields received on this topic"
+                                            style="padding:6px 10px;font-size:12px;background:#1565c0;white-space:nowrap;">
+                                        Scan
+                                    </button>
+                                </div>
+                                <div id="fieldDiscovery" style="margin-top:6px;"></div>
+                            </div>
+                            <div>
+                                <label style="color:#94a3b8;font-size:12px;display:block;margin-bottom:4px;">
+                                    Field / JSON Key <span style="color:#f44336;">*</span>
+                                    <span style="color:#607d8b;font-size:11px;"> (e.g. HPU_Work_Pressure)</span>
+                                </label>
+                                <input type="text" id="newMqttField"
+                                       placeholder="HPU_Work_Pressure"
+                                       style="width:100%;padding:8px;border-radius:6px;border:1px solid #3a5a7a;background:#1e3a5f;color:#fff;">
+                            </div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 80px 80px 80px;gap:10px;margin-bottom:12px;">
+                            <div>
+                                <label style="color:#94a3b8;font-size:12px;display:block;margin-bottom:4px;">Display Label</label>
+                                <input type="text" id="newMqttLabel"
+                                       placeholder="HPU Work Pressure"
+                                       style="width:100%;padding:8px;border-radius:6px;border:1px solid #3a5a7a;background:#1e3a5f;color:#fff;">
+                            </div>
+                            <div>
+                                <label style="color:#94a3b8;font-size:12px;display:block;margin-bottom:4px;">Unit</label>
+                                <input type="text" id="newMqttUnit"
+                                       placeholder="bar"
+                                       style="width:100%;padding:8px;border-radius:6px;border:1px solid #3a5a7a;background:#1e3a5f;color:#fff;">
+                            </div>
+                            <div>
+                                <label style="color:#94a3b8;font-size:12px;display:block;margin-bottom:4px;">Min</label>
+                                <input type="number" id="newMqttMin" placeholder="0"
+                                       style="width:100%;padding:8px;border-radius:6px;border:1px solid #3a5a7a;background:#1e3a5f;color:#fff;">
+                            </div>
+                            <div>
+                                <label style="color:#94a3b8;font-size:12px;display:block;margin-bottom:4px;">Max</label>
+                                <input type="number" id="newMqttMax" placeholder="100"
+                                       style="width:100%;padding:8px;border-radius:6px;border:1px solid #3a5a7a;background:#1e3a5f;color:#fff;">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" onclick="addPanel()">+ Add Panel</button>
+                        <div style="margin-top:10px;color:#607d8b;font-size:12px;">
+                            Telegraf JSON format yang didukung:<br>
+                            <code style="color:#90caf9;">{"fields": {"HPU_Work_Pressure": 245.6, ...}}</code>
+                            &nbsp; atau flat &nbsp;
+                            <code style="color:#90caf9;">{"HPU_Work_Pressure": 245.6}</code>
+                        </div>
+                    </div>
+
+                    <!-- Danger zone -->
+                    <div style="border-top:1px solid #1e3a5f;margin-top:20px;padding-top:14px;">
+                        <button class="btn btn-danger btn-sm" onclick="clearAllMonitoringData()"
+                                style="font-size:12px;">
+                            ✕ Clear all monitoring data
+                        </button>
+                        <span style="color:#607d8b;font-size:11px;margin-left:10px;">
+                            Hapus semua parameter (motor + MQTT panels) dari localStorage
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications / Alarms Section -->
+    <div id="notificationsSection" class="main-section">
+        <div class="header notifications-header">
+            <h1 class="logo">System Alarms</h1>
+            <div class="notifications-controls">
+                <button class="btn btn-primary"   onclick="clearAllNotifications()">Clear All</button>
+                <button class="btn btn-secondary"  onclick="openNotificationSettings()">Settings</button>
+                <button class="btn btn-secondary"  onclick="openEmailSettingsModal()">Email Settings</button>
+                <div class="notifications-filter">
+                    <select id="notificationFilter" onchange="filterNotifications()">
+                        <option value="all">All Alarms</option>
+                        <option value="critical">Critical Only</option>
+                        <option value="warning">Warnings Only</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="notifications-stats">
+            <div class="stat-card critical-stat">
+                <div class="stat-info">
+                    <div class="stat-value" id="totalCritical">0</div>
+                    <div class="stat-label">Critical</div>
+                </div>
+            </div>
+            <div class="stat-card warning-stat">
+                <div class="stat-info">
+                    <div class="stat-value" id="totalAlerts">0</div>
+                    <div class="stat-label">Warnings</div>
+                </div>
+            </div>
+            <div class="stat-card resolved-stat">
+                <div class="stat-info">
+                    <div class="stat-value" id="totalResolved">0</div>
+                    <div class="stat-label">Resolved</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="notifications-container" id="notificationsContainer">
+            <div class="no-notifications" id="noNotifications">
+                <div class="no-notifications-text">No Alarms available</div>
+            </div>
+        </div>
+
+        <!-- Notification Settings Modal -->
+        <div id="notificationSettingsModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title">Alarm Settings</h2>
+                    <span class="close" onclick="closeNotificationSettings()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="notification-settings">
+                        <div class="settings-section">
+                            <h3>Critical Threshold Management</h3>
+                            <div class="critical-thresholds-list" id="criticalThresholdsList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Email Settings Modal -->
+        <div id="emailSettingsModal" class="modal">
+            <div class="modal-content" style="max-width:540px;">
+                <div class="modal-header">
+                    <h2 class="modal-title">Email Notification Settings</h2>
+                    <span class="close" onclick="closeEmailSettingsModal()">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="settings-section">
+                        <p style="color:#94a3b8;font-size:13px;margin-bottom:16px;">
+                            Email notifications are sent via <strong>EmailJS</strong>.<br>
+                            Set up once at <a href="https://emailjs.com" target="_blank" style="color:#4fc3f7;">emailjs.com</a>
+                            with Gmail service (smtp.gmail.com).
+                        </p>
+                        <div class="property-group">
+                            <label>EmailJS Public Key</label>
+                            <input type="text" id="emailPublicKey" placeholder="e.g. user_xxxxxxxxxxxx"
+                                   style="width:100%;padding:8px;border-radius:6px;border:1px solid #3a5a7a;background:#1e3a5f;color:#fff;">
+                        </div>
+                        <div class="property-group">
+                            <label>Service ID</label>
+                            <input type="text" id="emailServiceId" placeholder="e.g. service_xxxxxxx"
+                                   style="width:100%;padding:8px;border-radius:6px;border:1px solid #3a5a7a;background:#1e3a5f;color:#fff;">
+                        </div>
+                        <div class="property-group">
+                            <label>Template ID</label>
+                            <input type="text" id="emailTemplateId" placeholder="e.g. template_xxxxxxx"
+                                   style="width:100%;padding:8px;border-radius:6px;border:1px solid #3a5a7a;background:#1e3a5f;color:#fff;">
+                        </div>
+                        <div class="property-group">
+                            <label>Receiver Email *</label>
+                            <input type="email" id="emailReceiver" placeholder="recipient@example.com"
+                                   style="width:100%;padding:8px;border-radius:6px;border:1px solid #3a5a7a;background:#1e3a5f;color:#fff;">
+                        </div>
+                        <div style="display:flex;gap:10px;margin-top:16px;">
+                            <button class="btn btn-primary" onclick="saveEmailSettingsForm()">Save Settings</button>
+                            <button class="btn btn-secondary" onclick="testEmailNotification()">Send Test Email</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historical Data Section -->
+    <div id="historySection" class="main-section">
+        <div class="header history-header">
+            <h1 class="logo">Historical Data</h1>
+            <div class="history-controls">
+                <button class="btn btn-primary"   onclick="openHistoryChart()">Graphic</button>
+                <input type="text" id="historySearch" placeholder="Search..." onkeyup="filterHistoryTable()">
+                <button class="btn btn-secondary"  onclick="clearHistoryTable()">Clear</button>
+                <select id="historySort" onchange="sortHistoryByOption()">
+                    <option value="">Select Sort Option</option>
+                    <option value="date_asc">Date (Oldest First)</option>
+                    <option value="date_desc">Date (Newest First)</option>
+                    <option value="value_asc">Value (Lowest First)</option>
+                    <option value="value_desc">Value (Highest First)</option>
+                </select>
+                <button class="btn btn-primary"   onclick="exportHistoryToCSV()">Export CSV</button>
+                <input type="file" id="importHistoryFile" style="display:none" accept=".csv"
+                       onchange="importHistoryFromCSV(this.files[0])" />
+                <button class="btn btn-secondary"  onclick="document.getElementById('importHistoryFile').click()">Import CSV</button>
+            </div>
+        </div>
+        <div class="history-table-container">
+            <table id="historyTable">
+                <thead></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- Chart Modal -->
+        <div id="historyChartModal" class="modal" style="display:none;">
+            <div class="modal-content wide">
+                <div class="modal-header">
+                    <h2 class="modal-title">Measurement Graphics</h2>
+                    <span class="close" onclick="closeHistoryChart()">&times;</span>
+                </div>
+                <div class="modal-body" id="chartsContainer" style="display:flex;flex-direction:column;gap:30px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- External libraries -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+
+    <!-- Application modules (order matters) -->
+    <script src="js/config.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/navigation.js"></script>
+    <script src="js/architecture.js"></script>
+    <script src="js/monitoring.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/datasource-mqtt.js"></script>
+    <script src="js/history.js"></script>
+    <script src="js/init.js"></script>
+</body>
+</html>

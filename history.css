@@ -1,0 +1,285 @@
+/* Chart Modal */
+#historyChartModal {
+  position: fixed;
+  z-index: 1000;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#historyChartModal .modal-content {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+#historyChartModal .modal-content.wide {
+  width: 90%;
+  max-width: 1200px;
+}
+
+#chartsContainer canvas {
+  width: 100% !important;
+  max-height: 400px;
+}
+
+.history-header {
+    background: linear-gradient(90deg, #142c46 0%, #1e293b 100%);
+    padding: 20px;
+    color: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.history-controls {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.history-controls input {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    min-width: 200px;
+    transition: all 0.3s ease;
+}
+
+.history-controls input:focus {
+    outline: none;
+    border-color: #142c46;
+    box-shadow: 0 0 0 2px rgba(20, 44, 70, 0.2);
+}
+
+.history-controls select {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    min-width: 150px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.history-controls select:focus {
+    outline: none;
+    border-color: #142c46;
+    box-shadow: 0 0 0 2px rgba(20, 44, 70, 0.2);
+}
+
+.history-controls .btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.history-controls .btn-secondary {
+    background: #6b7280;
+    color: white;
+}
+
+.history-controls .btn-secondary:hover {
+    background: #4b5563;
+}
+
+.history-table-container {
+    padding: 20px;
+    max-height: calc(100vh - 150px);
+    overflow: auto;
+    border-radius: 8px;
+}
+
+#historyTable {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 14px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#historyTable th, #historyTable td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+    white-space: nowrap;
+}
+
+#historyTable th {
+    background: #142c46;
+    color: white;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+
+#historyTable th:hover {
+    background: #1e3a5f;
+}
+
+/* Sort indicators */
+#historyTable th.sort-asc::after {
+    content: " ↑";
+    position: absolute;
+    right: 8px;
+    color: #60a5fa;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+#historyTable th.sort-desc::after {
+    content: " ↓";
+    position: absolute;
+    right: 8px;
+    color: #60a5fa;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+#historyTable tbody tr {
+    transition: all 0.2s ease;
+}
+
+#historyTable tbody tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+#historyTable tbody tr:hover {
+    background: #e0f2fe !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Hidden rows animation untuk search/filter */
+#historyTable tbody tr[style*="display: none"] {
+    opacity: 0;
+    transform: translateX(-10px);
+}
+
+/* Empty state styling */
+.empty-history {
+    text-align: center;
+    padding: 40px;
+    color: #6b7280;
+    font-style: italic;
+    font-size: 16px;
+}
+
+.empty-history-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+/* Loading state */
+.history-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    color: #6b7280;
+    font-size: 16px;
+}
+
+.history-loading::before {
+    content: "";
+    width: 20px;
+    height: 20px;
+    border: 2px solid #e5e7eb;
+    border-top: 2px solid #142c46;
+    border-radius: 50%;
+    margin-right: 10px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .history-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+    
+    .history-controls {
+        flex-wrap: wrap;
+        width: 100%;
+    }
+    
+    .history-controls input,
+    .history-controls select {
+        min-width: 120px;
+        flex: 1;
+    }
+    
+    .history-table-container {
+        padding: 10px;
+    }
+    
+    #historyTable {
+        font-size: 12px;
+    }
+    
+    #historyTable th,
+    #historyTable td {
+        padding: 8px 10px;
+    }
+}
+
+/* Scrollbar styling untuk WebKit browsers */
+.history-table-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.history-table-container::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.history-table-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.history-table-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Filter dan search result highlight */
+.search-highlight {
+    background-color: #fef3c7;
+    padding: 1px 2px;
+    border-radius: 2px;
+}
+
+/* Status indicators for table rows */
+.row-status-normal {
+    border-left: 4px solid #10b981;
+}
+
+.row-status-warning {
+    border-left: 4px solid #f59e0b;
+}
+
+.row-status-critical {
+    border-left: 4px solid #ef4444;
+}
