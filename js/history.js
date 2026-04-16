@@ -325,14 +325,6 @@ function openHistoryChart() {
         historyCharts.push(chart);
     });
 
-    const summary = document.createElement('div');
-    summary.style.cssText = 'padding:15px;background:#e8f4f8;border-radius:5px;margin-bottom:20px;';
-    summary.innerHTML = `<strong>Chart Summary:</strong><br>
-        • Total Measurements: ${Object.keys(byMeasField).length}<br>
-        • Total Data Points: ${historyData.length}<br>
-        • Charts Generated: ${historyCharts.length}`;
-    container.insertBefore(summary, container.firstChild);
-
     document.getElementById('historyChartModal').style.display = 'flex';
 }
 
