@@ -10,6 +10,10 @@ let dragOffset = { x: 0, y: 0 };
 let gridVisible = true;
 let tempLine    = null;
 
+const componentsWithIP = new Set([
+    'PLC', 'HMI', 'Gateway', 'Switch', 'Router', 'Cloud', 'Analytics', 'Dashboard'
+]);
+
 const componentIcons = {
     "Sensor": "💡", "Actuator": "⚙️", "Electric Motor": "⚡",
     "Hydraulic Motor": "🛠️", "Hydraulic Pump": "🔧", "Hydraulic Cylinder": "📏",
@@ -161,7 +165,11 @@ function showProperties(comp) {
     if (!panel) return;
     document.getElementById('componentName').value = comp.name;
     document.getElementById('componentDesc').value = comp.description;
-    document.getElementById('componentIP').value   = comp.ip;
+    document.getElementById('componentIP').value   = comp.ip || '';
+
+    const ipGroup = document.getElementById('ipAddressGroup');
+    if (ipGroup) ipGroup.style.display = componentsWithIP.has(comp.type) ? '' : 'none';
+
     panel.style.display = 'block';
     document.getElementById('componentName').oninput = e => {
         comp.name = e.target.value;
