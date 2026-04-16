@@ -34,7 +34,7 @@ function renderNotifications() {
         const icon = getNotificationIcon(n.type);
         return `<div class="notification-item ${n.type}" data-id="${n.id}">
             <div class="notification-header">
-                <div class="notification-title">${icon} ${n.type.toUpperCase()}</div>
+                <div class="notification-title">${n.type.toUpperCase()}</div>
                 <div class="notification-time">${new Date(n.timestamp).toLocaleString()}</div>
             </div>
             <div class="notification-message">${n.message}</div>
@@ -53,7 +53,7 @@ function renderNotifications() {
 }
 
 function getNotificationIcon(type) {
-    return { critical: '🚨', warning: '⚠️', alert: '⚠️', resolved: '✅' }[type] || 'ℹ️';
+    return '';
 }
 
 function updateNotificationStats() {
