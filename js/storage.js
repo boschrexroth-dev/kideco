@@ -27,7 +27,8 @@ function saveConfigurationToStorage() {
             allNotifications,
             ruleAlertCounters,
             mqttSubscriptions,
-            mqttBrokerUrl
+            mqttBrokerUrl,
+            cardViewModes
         };
         localStorage.setItem(STORAGE_KEYS.PARAMETER_CONFIG, JSON.stringify(data));
     } catch (e) { console.error('Save configuration failed:', e); }
@@ -45,6 +46,7 @@ function loadConfigurationFromStorage() {
             allNotifications         = p.allNotifications         || [];
             ruleAlertCounters        = p.ruleAlertCounters        || {};
             mqttSubscriptions        = p.mqttSubscriptions        || [];
+            cardViewModes            = p.cardViewModes            || {};
             if (p.mqttBrokerUrl) {
                 // Upgrade insecure ws:// to wss:// automatically
                 mqttBrokerUrl = p.mqttBrokerUrl.replace(/^ws:\/\//i, 'wss://').replace(/:8000\//, ':8884/');

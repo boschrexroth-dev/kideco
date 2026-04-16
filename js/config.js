@@ -52,6 +52,7 @@ var outputMessages          = [];
 var ruleAlertCounters       = {};
 
 var mqttSubscriptions = [];
+var cardViewModes = {}; // { [itemId]: 'bars' | 'line' | 'gauge' }
 
 function normalizeKey(k) {
     return String(k).toLowerCase().replace(/[^a-z0-9]/g, '');

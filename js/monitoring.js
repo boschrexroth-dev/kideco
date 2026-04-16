@@ -179,15 +179,22 @@ function createMonitoringCard(item) {
     const card = document.createElement('div');
     card.className = 'monitoring-card status-' + item.status;
     card.onclick = openGlobalSettings;
-    const bars = item.history.map(val => {
-        let h = Math.max(5, ((val - item.min) / (item.max - item.min)) * 100);
-        if (isNaN(h)) h = 5;
-        return `<div class="chart-bar" style="height:${h}%"></div>`;
-    }).join('');
+
+    const mode = cardViewModes[item.id] || 'bars';
+    const eid  = item.id.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
     card.innerHTML =
         '<div class="card-header">' +
             '<div class="card-title">' + item.name + '</div>' +
-            '<button onclick="event.stopPropagation();deleteMonitoringItem(\'' + item.id + '\')" ' +
+            '<div class="card-view-toggle" onclick="event.stopPropagation()">' +
+                '<button class="view-btn' + (mode === 'bars'  ? ' active' : '') + '" ' +
+                        'onclick="setCardViewMode(\'' + eid + '\',\'bars\')"  title="Bar Chart">Bars</button>' +
+                '<button class="view-btn' + (mode === 'line'  ? ' active' : '') + '" ' +
+                        'onclick="setCardViewMode(\'' + eid + '\',\'line\')"  title="Line Chart">Line</button>' +
+                '<button class="view-btn' + (mode === 'gauge' ? ' active' : '') + '" ' +
+                        'onclick="setCardViewMode(\'' + eid + '\',\'gauge\')" title="Gauge">Gauge</button>' +
+            '</div>' +
+            '<button onclick="event.stopPropagation();deleteMonitoringItem(\'' + eid + '\')" ' +
                     'title="Hapus parameter ini" ' +
                     'style="background:none;border:none;color:#5f7f96;font-size:14px;cursor:pointer;' +
                            'padding:0 2px;line-height:1;flex-shrink:0;" ' +
@@ -199,13 +206,114 @@ function createMonitoringCard(item) {
                 '<div class="metric-label">Current Value</div>' +
                 '<div class="metric-value">' +
                     (item.isBool
-                        ? `<span style="color:${item.value ? '#4caf50' : '#94a3b8'}">${item.value ? 'ON' : 'OFF'}</span>`
+                        ? '<span style="color:' + (item.value ? '#4caf50' : '#94a3b8') + '">' + (item.value ? 'ON' : 'OFF') + '</span>'
                         : item.value + '<span class="metric-unit">' + item.unit + '</span>') +
                 '</div>' +
             '</div>' +
-            '<div class="mini-chart">' + (bars || '<div style="text-align:center;color:#5f7f96;font-size:12px;">No history</div>') + '</div>' +
+            _renderCardChart(item, mode) +
         '</div>';
     return card;
+}
+
+function setCardViewMode(itemId, mode) {
+    cardViewModes[itemId] = mode;
+    saveConfigurationToStorage();
+    renderDashboard();
+}
+
+function _renderCardChart(item, mode) {
+    if (mode === 'line')  return _renderLineChart(item);
+    if (mode === 'gauge') return _renderGauge(item);
+    // Default: bars
+    const bars = item.history.map(val => {
+        let h = Math.max(5, ((val - item.min) / (item.max - item.min)) * 100);
+        if (isNaN(h)) h = 5;
+        return '<div class="chart-bar" style="height:' + h + '%"></div>';
+    }).join('');
+    return '<div class="mini-chart">' +
+        (bars || '<div style="text-align:center;color:#5f7f96;font-size:12px;">No history</div>') +
+        '</div>';
+}
+
+function _renderLineChart(item) {
+    if (!item.history || item.history.length < 2) {
+        return '<div class="mini-chart line-chart-container" style="justify-content:center;">' +
+               '<span style="color:#5f7f96;font-size:12px;">No history</span></div>';
+    }
+    const W = 200, H = 60, padX = 4, padY = 4;
+    const vals = item.history;
+    const minV = Math.min.apply(null, vals);
+    const maxV = Math.max.apply(null, vals);
+    const rangeV = (maxV - minV) || 1;
+
+    const pts = vals.map(function(v, i) {
+        const x = padX + (i / (vals.length - 1)) * (W - 2 * padX);
+        const y = (H - padY) - ((v - minV) / rangeV) * (H - 2 * padY);
+        return x.toFixed(1) + ',' + y.toFixed(1);
+    });
+
+    const gId    = 'lg_' + item.id.replace(/[^a-z0-9]/gi, '_');
+    const botY   = H - padY;
+    const areaStart = padX + ',' + botY;
+    const areaEnd   = (padX + (W - 2*padX)).toFixed(1) + ',' + botY;
+
+    return '<div class="line-chart-container">' +
+        '<svg width="100%" height="100%" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' +
+            '<defs>' +
+                '<linearGradient id="' + gId + '" x1="0" y1="0" x2="0" y2="1">' +
+                    '<stop offset="0%" stop-color="var(--status-color,#3b82f6)" stop-opacity="0.35"/>' +
+                    '<stop offset="100%" stop-color="var(--status-color,#3b82f6)" stop-opacity="0.02"/>' +
+                '</linearGradient>' +
+            '</defs>' +
+            '<polygon points="' + areaStart + ' ' + pts.join(' ') + ' ' + areaEnd + '" fill="url(#' + gId + ')"/>' +
+            '<polyline points="' + pts.join(' ') + '" fill="none" stroke="var(--status-color,#3b82f6)" ' +
+                'stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>' +
+        '</svg>' +
+    '</div>';
+}
+
+function _renderGauge(item) {
+    // Semi-circle gauge: 180° arc from West (left) to East (right) through North (top)
+    // SVG angles: 0°=East, 90°=South(bottom), 180°=West, 270°=North(top)
+    const cx = 80, cy = 72, r = 58;
+    const startX = (cx - r).toFixed(1); // = 22
+    const endX   = (cx + r).toFixed(1); // = 138
+    const arcY   = cy.toFixed(1);       // = 72
+
+    const raw = (item.value - item.min) / (item.max - item.min);
+    const pct = isNaN(raw) ? 0 : Math.max(0, Math.min(0.999, raw));
+
+    // Value arc: angle goes from 180° to 360° (CW), sweep-flag=1
+    const valAngleRad = (180 + 180 * pct) * Math.PI / 180;
+    const valX = (cx + r * Math.cos(valAngleRad)).toFixed(1);
+    const valY = (cy + r * Math.sin(valAngleRad)).toFixed(1);
+
+    const showArc = pct > 0.001;
+
+    return '<div class="gauge-container">' +
+        '<svg width="160" height="94" viewBox="0 0 160 94">' +
+            // Background arc (full 180°)
+            '<path d="M ' + startX + ' ' + arcY +
+                ' A ' + r + ' ' + r + ' 0 0 1 ' + endX + ' ' + arcY + '" ' +
+                'fill="none" stroke="rgba(30,58,138,0.5)" stroke-width="7" stroke-linecap="round"/>' +
+            // Value arc
+            (showArc
+                ? '<path d="M ' + startX + ' ' + arcY +
+                    ' A ' + r + ' ' + r + ' 0 0 1 ' + valX + ' ' + valY + '" ' +
+                    'fill="none" stroke="var(--status-color,#3b82f6)" stroke-width="7" stroke-linecap="round"/>'
+                : '') +
+            // Tick at current value
+            (showArc
+                ? '<circle cx="' + valX + '" cy="' + valY + '" r="4" fill="var(--status-color,#3b82f6)"/>'
+                : '') +
+            // Min label
+            '<text x="' + (cx - r - 4) + '" y="88" text-anchor="end" fill="#64748b" font-size="9">' +
+                item.min + '</text>' +
+            // Max label
+            '<text x="' + (cx + r + 4) + '" y="88" text-anchor="start" fill="#64748b" font-size="9">' +
+                item.max + '</text>' +
+        '</svg>' +
+    '</div>';
 }
 
 function refreshMotorDropdown() {
