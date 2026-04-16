@@ -11,7 +11,7 @@ let gridVisible = true;
 let tempLine    = null;
 
 const componentsWithIP = new Set([
-    'PLC', 'HMI', 'Gateway', 'Switch', 'Router', 'Cloud', 'Analytics', 'Dashboard'
+    'VFD', 'HMI', 'CtrlX Core', 'Industrial Router', 'Network Switch', 'Cloud', 'CtrlX IO'
 ]);
 
 const componentIcons = {
