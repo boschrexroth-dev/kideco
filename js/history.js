@@ -1,8 +1,10 @@
 let historyColumns = [];
 const excludedFields = ['result', 'table', '_time'];
 let historyCharts = [];
-let historyData   = [];
-const MAX_ROWS = 500;
+let historyData   = [];   // semua data mentah
+let filteredData  = [];   // setelah filter/sort
+let historyPage   = 0;
+const PAGE_SIZE   = 100;
 
 function formatTimestamp(ts) {
     if (!ts) return '-';
@@ -15,170 +17,197 @@ function formatTimestamp(ts) {
     } catch (_) { return ts; }
 }
 
-function addHistoryRow(data) {
+
+function renderPage(page) {
     const table = document.getElementById('historyTable');
     if (!table) return;
-    const thead = table.querySelector('thead');
-    const tbody = table.querySelector('tbody');
+    historyPage = page;
 
+    const start = page * PAGE_SIZE;
+    const slice = filteredData.slice(start, start + PAGE_SIZE);
+
+    const frag  = document.createDocumentFragment();
+    slice.forEach(rowData => {
+        const tr = document.createElement('tr');
+        historyColumns.forEach(key => {
+            const td  = document.createElement('td');
+            let display = rowData[key] !== null && rowData[key] !== undefined ? rowData[key] : '-';
+            let raw     = rowData[key];
+            if (key === 'time' && rowData.time) {
+                display = formatTimestamp(rowData.time);
+                raw     = new Date(rowData.time).getTime();
+            }
+            td.textContent = display;
+            td.setAttribute('data-value', raw ?? '-');
+            tr.appendChild(td);
+        });
+        frag.appendChild(tr);
+    });
+
+    const tbody = table.querySelector('tbody');
+    tbody.innerHTML = '';
+    tbody.appendChild(frag);
+    renderPagination();
+}
+
+function renderPagination() {
+    let pg = document.getElementById('historyPagination');
+    if (!pg) {
+        pg = document.createElement('div');
+        pg.id = 'historyPagination';
+        pg.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 0;flex-wrap:wrap;';
+        const container = document.querySelector('.history-table-container');
+        if (container) container.after(pg);
+    }
+
+    const total = filteredData.length;
+    const pages = Math.ceil(total / PAGE_SIZE);
+    if (pages <= 1) { pg.innerHTML = `<span style="color:#94a3b8;font-size:13px;">${total} rows</span>`; return; }
+
+    const cur = historyPage;
+    let html  = `<span style="color:#94a3b8;font-size:13px;">${total} rows &nbsp;|&nbsp; Page ${cur+1} of ${pages}</span>`;
+    html += `<button onclick="renderPage(0)" ${cur===0?'disabled':''} style="padding:4px 8px;">«</button>`;
+    html += `<button onclick="renderPage(${cur-1})" ${cur===0?'disabled':''} style="padding:4px 8px;">‹</button>`;
+
+    const from = Math.max(0, cur - 2);
+    const to   = Math.min(pages - 1, cur + 2);
+    for (let i = from; i <= to; i++) {
+        html += `<button onclick="renderPage(${i})" style="padding:4px 8px;${i===cur?'background:#1565c0;color:#fff;':''}">${i+1}</button>`;
+    }
+
+    html += `<button onclick="renderPage(${cur+1})" ${cur===pages-1?'disabled':''} style="padding:4px 8px;">›</button>`;
+    html += `<button onclick="renderPage(${pages-1})" ${cur===pages-1?'disabled':''} style="padding:4px 8px;">»</button>`;
+    pg.innerHTML = html;
+}
+
+
+function loadHistoryData(rows) {
+    historyData = rows;
+    filteredData = [...rows];
+    _buildHeader();
+    renderPage(0);
+}
+
+function _buildHeader() {
+    if (!historyColumns.length) return;
+    const table = document.getElementById('historyTable');
+    if (!table) return;
+    table.querySelector('thead').innerHTML =
+        `<tr>${historyColumns.map((k, i) =>
+            `<th onclick="_sortByCol(${i})" style="cursor:pointer;">${k}</th>`).join('')}</tr>`;
+}
+
+
+function addHistoryRow(data) {
     const rowData = {
         time:        data._time        || null,
         value:       data._value !== undefined ? parseFloat(data._value) : null,
         field:       data._field       || '-',
         measurement: data._measurement || '-'
     };
-    historyData.push(rowData);
-    if (historyData.length > MAX_ROWS) historyData.shift();
-
     if (historyColumns.length === 0) {
         historyColumns = ['time', 'value', 'field', 'measurement'];
-        thead.innerHTML = `<tr>${historyColumns.map((k, i) =>
-            `<th onclick="sortHistoryTable(${i})" style="cursor:pointer;">${k}</th>`).join('')}</tr>`;
-        const sortSel = document.getElementById('historySort');
-        if (sortSel) sortSel.innerHTML = `
-            <option value="">Select Sort Option</option>
-            <option value="date_asc">Date (Oldest First)</option>
-            <option value="date_desc">Date (Newest First)</option>
-            <option value="value_desc">Value (High → Low)</option>
-            <option value="value_asc">Value (Low → High)</option>`;
+        _buildHeader();
     }
-
-    const row = tbody.insertRow();
-    historyColumns.forEach(key => {
-        const cell = row.insertCell();
-        let display = rowData[key] !== null ? rowData[key] : '-';
-        let raw     = rowData[key];
-
-        if (key === 'time' && data._time) {
-            display = formatTimestamp(data._time);
-            raw     = new Date(data._time).getTime();
-        }
-        if (key === 'value' && data._value !== undefined) {
-            display = data._value;
-            raw     = parseFloat(data._value);
-        }
-        cell.textContent = display;
-        cell.setAttribute('data-value', raw);
-    });
+    historyData.push(rowData);
+    filteredData.push(rowData);
+    const lastPage = Math.max(0, Math.ceil(filteredData.length / PAGE_SIZE) - 1);
+    if (historyPage >= lastPage - 1) renderPage(lastPage);
+    else renderPagination();
 }
 
 function clearHistoryTable() {
     historyData    = [];
+    filteredData   = [];
     historyColumns = [];
+    historyPage    = 0;
     const table = document.getElementById('historyTable');
-    if (!table) return;
-    table.querySelector('thead').innerHTML = '';
-    table.querySelector('tbody').innerHTML = '';
+    if (table) {
+        table.querySelector('thead').innerHTML = '';
+        table.querySelector('tbody').innerHTML = '';
+    }
+    const pg = document.getElementById('historyPagination');
+    if (pg) pg.innerHTML = '';
     const ss = document.getElementById('historySort');
     if (ss) ss.value = '';
 }
 
+
 function filterHistoryTable() {
-    const input = document.getElementById('historySearch');
-    if (!input) return;
-    const q    = input.value.toLowerCase();
-    const rows = document.querySelectorAll('#historyTable tbody tr');
-    rows.forEach(row => {
-        const found = [...row.querySelectorAll('td')].some(c => c.textContent.toLowerCase().includes(q));
-        row.style.display = found ? '' : 'none';
-    });
+    const q = (document.getElementById('historySearch')?.value || '').toLowerCase();
+    filteredData = q
+        ? historyData.filter(row =>
+            Object.values(row).some(v => String(v ?? '').toLowerCase().includes(q)))
+        : [...historyData];
+    renderPage(0);
 }
 
-function sortHistoryTable(colIndex) {
+
+function _sortByCol(colIndex) {
     const table = document.getElementById('historyTable');
-    const tbody = table.querySelector('tbody');
-    const rows  = Array.from(tbody.querySelectorAll('tr'));
     const cur   = table.getAttribute('data-sort-dir') || 'desc';
     const next  = cur === 'asc' ? 'desc' : 'asc';
+    const key   = historyColumns[colIndex];
 
-    rows.sort((a, b) => {
-        const ca = a.cells[colIndex]; const cb = b.cells[colIndex];
-        if (!ca || !cb) return 0;
-        let va = ca.getAttribute('data-value') || ca.textContent.trim();
-        let vb = cb.getAttribute('data-value') || cb.textContent.trim();
-        if (va === '-' || va === '') va = next === 'asc' ? 'zzz' : '';
-        if (vb === '-' || vb === '') vb = next === 'asc' ? 'zzz' : '';
+    filteredData.sort((a, b) => {
+        let va = a[key]; let vb = b[key];
+        if (key === 'time') { va = new Date(va).getTime(); vb = new Date(vb).getTime(); }
         const na = parseFloat(va); const nb = parseFloat(vb);
         if (!isNaN(na) && !isNaN(nb)) return next === 'asc' ? na - nb : nb - na;
         return next === 'asc'
-            ? va.localeCompare(vb, undefined, { numeric:true, sensitivity:'base' })
-            : vb.localeCompare(va, undefined, { numeric:true, sensitivity:'base' });
+            ? String(va ?? '').localeCompare(String(vb ?? ''), undefined, { numeric:true })
+            : String(vb ?? '').localeCompare(String(va ?? ''), undefined, { numeric:true });
     });
-    tbody.innerHTML = '';
-    rows.forEach(r => tbody.appendChild(r));
-    table.setAttribute('data-sort-dir', next);
 
+    table.setAttribute('data-sort-dir', next);
     table.querySelectorAll('th').forEach((h, i) => {
         h.classList.remove('sort-asc','sort-desc');
         if (i === colIndex) h.classList.add('sort-' + next);
     });
+    renderPage(0);
 }
+
+function sortHistoryTable(colIndex) { _sortByCol(colIndex); }
+
 
 function sortHistoryByOption() {
-    const sel = document.getElementById('historySort');
-    if (!sel || !sel.value) return;
-    const opt = sel.value;
+    const opt = document.getElementById('historySort')?.value;
+    if (!opt) return;
 
-    let colIdx = -1;
-    if (opt.includes('date')) {
-        colIdx = historyColumns.findIndex(c => c.toLowerCase().includes('time') || c.toLowerCase().includes('date'));
-    } else if (opt.includes('value')) {
-        colIdx = historyColumns.findIndex(c => c.toLowerCase() === 'value');
-        if (colIdx === -1) colIdx = _findBestNumericColumn();
-    }
-    if (colIdx < 0) colIdx = 0;
+    let key = 'time';
+    if (opt.includes('value')) key = historyColumns.find(c => c === 'value') || _findBestNumericKey();
+    const asc = opt.includes('asc');
 
-    const asc   = opt.includes('asc');
-    const table = document.getElementById('historyTable');
-    const tbody = table.querySelector('tbody');
-    const rows  = Array.from(tbody.querySelectorAll('tr'));
-
-    rows.sort((a, b) => {
-        const ca = a.cells[colIdx]; const cb = b.cells[colIdx];
-        if (!ca || !cb) return 0;
-        let va = ca.textContent.trim(); let vb = cb.textContent.trim();
-        if (!va || va === '-') return asc ? 1 : -1;
-        if (!vb || vb === '-') return asc ? -1 : 1;
-
-        if (opt.includes('date')) {
-            const da = new Date(Date.parse(va)); const db = new Date(Date.parse(vb));
-            if (!isNaN(da) && !isNaN(db)) return asc ? da - db : db - da;
-        }
+    filteredData.sort((a, b) => {
+        let va = a[key]; let vb = b[key];
+        if (key === 'time') { va = new Date(va).getTime(); vb = new Date(vb).getTime(); }
         const na = parseFloat(va); const nb = parseFloat(vb);
         if (!isNaN(na) && !isNaN(nb)) return asc ? na - nb : nb - na;
-        return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+        return asc
+            ? String(va ?? '').localeCompare(String(vb ?? ''))
+            : String(vb ?? '').localeCompare(String(va ?? ''));
     });
-    tbody.innerHTML = '';
-    rows.forEach(r => tbody.appendChild(r));
+    renderPage(0);
 }
 
-function _findBestNumericColumn() {
-    const rows = document.querySelectorAll('#historyTable tbody tr');
-    if (!rows.length) return 0;
-    let best = 0; let bestScore = 0;
-    for (let ci = 0; ci < historyColumns.length; ci++) {
-        let num = 0; let total = 0;
-        const sample = Math.min(rows.length, 10);
-        for (let ri = 0; ri < sample; ri++) {
-            const c = rows[ri].cells[ci];
-            if (c) { total++; if (!isNaN(parseFloat(c.textContent.trim()))) num++; }
-        }
-        const score = total > 0 ? num / total : 0;
-        if (score > bestScore) { bestScore = score; best = ci; }
-    }
+function _findBestNumericKey() {
+    const sample = historyData.slice(0, 10);
+    let best = historyColumns[0]; let bestScore = 0;
+    historyColumns.forEach(k => {
+        const score = sample.filter(r => !isNaN(parseFloat(r[k]))).length / Math.max(sample.length, 1);
+        if (score > bestScore) { bestScore = score; best = k; }
+    });
     return best;
 }
 
+
 function exportHistoryToCSV() {
-    if (!historyColumns.length || !historyData.length) {
-        alert('No data to export.');
-        return;
-    }
+    if (!historyColumns.length || !historyData.length) { alert('No data to export.'); return; }
     let csv = historyColumns.map(c => `"${c}"`).join(',') + '\n';
-    document.querySelectorAll('#historyTable tbody tr').forEach(row => {
-        csv += [...row.cells].map(c => {
-            let v = c.textContent.trim();
-            return `"${v.replace(/"/g,'""')}"`;
+    historyData.forEach(row => {
+        csv += historyColumns.map(k => {
+            let v = k === 'time' && row.time ? formatTimestamp(row.time) : (row[k] ?? '');
+            return `"${String(v).replace(/"/g,'""')}"`;
         }).join(',') + '\n';
     });
     const ts = new Date().toISOString().replace(/[:.]/g,'-').slice(0,-5);
@@ -190,10 +219,9 @@ function exportHistoryToCSV() {
     showNotification(`Exported history_data_${ts}.csv`, 'success');
 }
 
+
 function importHistoryFromCSV(file) {
-    if (!file || !file.name.toLowerCase().endsWith('.csv')) {
-        alert('Please select a CSV file.'); return;
-    }
+    if (!file || !file.name.toLowerCase().endsWith('.csv')) { alert('Please select a CSV file.'); return; }
     const reader = new FileReader();
     reader.onload = e => {
         try { parseAndImportCSV(e.target.result); }
@@ -207,30 +235,19 @@ function parseAndImportCSV(csvData) {
     if (!lines.length) { alert('Empty CSV.'); return; }
     const headers = _parseCSVLine(lines[0]);
     if (!headers.length) { alert('No headers found.'); return; }
-    if (!confirm(`Import ${lines.length - 1} rows with columns: ${headers.join(', ')}?\nThis will replace current data.`)) return;
+    if (!confirm(`Import ${lines.length - 1} rows?\nThis will replace current data.`)) return;
 
-    clearHistoryTable();
     historyColumns = headers.filter(h => !excludedFields.includes(h));
-
-    const table = document.getElementById('historyTable');
-    table.querySelector('thead').innerHTML = `<tr>${historyColumns.map((k,i)=>
-        `<th onclick="sortHistoryTable(${i})" style="cursor:pointer;">${k}</th>`).join('')}</tr>`;
-
-    let count = 0;
-    const tbody = table.querySelector('tbody');
+    const imported = [];
     for (let i = 1; i < lines.length; i++) {
         const vals = _parseCSVLine(lines[i].trim());
         if (!vals.length || vals.length !== headers.length) continue;
-        const obj = {}; headers.forEach((h, j) => { obj[h] = vals[j] || ''; });
-        const row = tbody.insertRow();
-        historyColumns.forEach(k => {
-            const c = row.insertCell();
-            c.textContent = obj[k] || '-';
-            c.setAttribute('data-value', obj[k] || '-');
-        });
-        count++;
+        const obj = {};
+        historyColumns.forEach(k => { obj[k] = headers.includes(k) ? vals[headers.indexOf(k)] : ''; });
+        imported.push(obj);
     }
-    alert(`Imported ${count} rows.`);
+    loadHistoryData(imported);
+    alert(`Imported ${imported.length} rows.`);
 }
 
 function _parseCSVLine(line) {
@@ -247,20 +264,21 @@ function _parseCSVLine(line) {
     return result;
 }
 
+
 function openHistoryChart() {
     if (!historyData.length) { alert('No data available for chart.'); return; }
 
     const byMeasField = {};
     historyData.forEach(d => {
         if (!d.time || d.value === null) return;
-        if (!byMeasField[d.measurement]) byMeasField[d.measurement] = {};
-        if (!byMeasField[d.measurement][d.field]) byMeasField[d.measurement][d.field] = [];
-        byMeasField[d.measurement][d.field].push({ x: new Date(d.time), y: d.value });
+        const meas = d.measurement || 'data';
+        if (!byMeasField[meas]) byMeasField[meas] = {};
+        if (!byMeasField[meas][d.field]) byMeasField[meas][d.field] = [];
+        byMeasField[meas][d.field].push({ x: new Date(d.time), y: d.value });
     });
 
     historyCharts.forEach(ch => ch.destroy());
     historyCharts = [];
-
     const container = document.getElementById('chartsContainer');
     container.innerHTML = '';
 
@@ -269,8 +287,7 @@ function openHistoryChart() {
         'rgb(153,102,255)','rgb(255,159,64)','rgb(199,199,199)','rgb(83,102,147)',
         'rgb(255,99,255)','rgb(99,255,132)'
     ];
-    const fieldColors = {};
-    let ci = 0;
+    const fieldColors = {}; let ci = 0;
 
     Object.keys(byMeasField).forEach(measurement => {
         const fields = byMeasField[measurement];
@@ -288,13 +305,13 @@ function openHistoryChart() {
         container.appendChild(wrap);
 
         const datasets = names.map(field => {
-            if (!fieldColors[field]) { fieldColors[field] = palette[ci++ % palette.length]; }
+            if (!fieldColors[field]) fieldColors[field] = palette[ci++ % palette.length];
             return {
                 label: field,
-                data:  fields[field].sort((a,b) => a.x - b.x).slice(-100),
+                data:  fields[field].sort((a,b) => a.x - b.x).slice(-200),
                 borderColor:     fieldColors[field],
                 backgroundColor: fieldColors[field] + '20',
-                tension: 0.3, fill: false, pointRadius: 3, pointHoverRadius: 6, borderWidth: 2
+                tension: 0.3, fill: false, pointRadius: 2, pointHoverRadius: 5, borderWidth: 2
             };
         });
 
@@ -314,9 +331,7 @@ function openHistoryChart() {
                     }
                 },
                 scales: {
-                    x: { type:'time', time:{ unit:'minute',
-                        displayFormats:{ minute:'HH:mm', hour:'HH:mm', day:'MMM DD' } },
-                        title:{ display:true, text:'Time' } },
+                    x: { type:'time', time:{ unit:'minute', displayFormats:{ minute:'HH:mm', hour:'HH:mm', day:'MMM DD' } }, title:{ display:true, text:'Time' } },
                     y: { beginAtZero:true, title:{ display:true, text:'Value' } }
                 },
                 interaction: { mode:'nearest', axis:'x', intersect:false }
@@ -331,8 +346,3 @@ function openHistoryChart() {
 function closeHistoryChart() {
     document.getElementById('historyChartModal').style.display = 'none';
 }
-
-setInterval(() => {
-    if (historyData.length && document.getElementById('historySection')?.classList.contains('active')) {
-    }
-}, 5000);

@@ -48,8 +48,7 @@ function loadConfigurationFromStorage() {
             mqttSubscriptions        = p.mqttSubscriptions        || [];
             cardViewModes            = p.cardViewModes            || {};
             if (p.mqttBrokerUrl) {
-                // Upgrade insecure ws:// to wss:// automatically
-                mqttBrokerUrl = p.mqttBrokerUrl.replace(/^ws:\/\//i, 'wss://').replace(/:8000\//, ':8884/');
+                    mqttBrokerUrl = p.mqttBrokerUrl.replace(/^ws:\/\//i, 'wss://').replace(/:8000\//, ':8884/');
             }
             return true;
         }

@@ -1,5 +1,15 @@
 const EMAIL_SENDER = "glennimmanuel8@gmail.com";
 
+const INFLUX_CONFIG = {
+    url:      'https://us-east-1-1.aws.cloud2.influxdata.com',
+    token:    't7mHH51CeVE-GbG2SwRDEzcbjvsHFZw6PDJX78WQTEPFZYDdR_KgduTihf0sF2BFI54H3FEcAI4hMOCvhnmcqw==',
+    org:      'kideco',
+    bucket:   'monitoring_cloud_v2',
+    proxyUrl: 'https://odd-leaf-0456.glennimmanuel8.workers.dev/'
+};
+
+const _IS_LOCAL = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+
 const parameterConfig = {
     "Electric Motor": {
         "Speed":          { unit: "rpm", min: 0, max: 3000 },
@@ -52,7 +62,7 @@ var outputMessages          = [];
 var ruleAlertCounters       = {};
 
 var mqttSubscriptions = [];
-var cardViewModes = {}; // { [itemId]: 'bars' | 'line' | 'gauge' }
+var cardViewModes = {};
 
 function normalizeKey(k) {
     return String(k).toLowerCase().replace(/[^a-z0-9]/g, '');

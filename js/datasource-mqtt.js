@@ -176,19 +176,6 @@ function _handleMessage(topic, rawMsg) {
 
         clearTimeout(_saveDebounce);
         _saveDebounce = setTimeout(() => saveConfigurationToStorage(), 3000);
-
-        if (typeof addHistoryRow === 'function') {
-            panelIds.forEach(id => {
-                const p = mqttSubscriptions.find(x => x.id === id);
-                if (!p) return;
-                addHistoryRow({
-                    _time:        new Date().toISOString(),
-                    _value:       p.value,
-                    _field:       p.field || p.label,
-                    _measurement: topic
-                });
-            });
-        }
     }
 }
 

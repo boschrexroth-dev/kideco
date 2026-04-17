@@ -224,7 +224,6 @@ function setCardViewMode(itemId, mode) {
 function _renderCardChart(item, mode) {
     if (mode === 'line')  return _renderLineChart(item);
     if (mode === 'gauge') return _renderGauge(item);
-    // Default: bars
     const bars = item.history.map(val => {
         let h = Math.max(5, ((val - item.min) / (item.max - item.min)) * 100);
         if (isNaN(h)) h = 5;
@@ -273,17 +272,14 @@ function _renderLineChart(item) {
 }
 
 function _renderGauge(item) {
-    // Semi-circle gauge: 180° arc from West (left) to East (right) through North (top)
-    // SVG angles: 0°=East, 90°=South(bottom), 180°=West, 270°=North(top)
     const cx = 80, cy = 72, r = 58;
-    const startX = (cx - r).toFixed(1); // = 22
-    const endX   = (cx + r).toFixed(1); // = 138
-    const arcY   = cy.toFixed(1);       // = 72
+    const startX = (cx - r).toFixed(1);
+    const endX   = (cx + r).toFixed(1);
+    const arcY   = cy.toFixed(1);
 
     const raw = (item.value - item.min) / (item.max - item.min);
     const pct = isNaN(raw) ? 0 : Math.max(0, Math.min(0.999, raw));
 
-    // Value arc: angle goes from 180° to 360° (CW), sweep-flag=1
     const valAngleRad = (180 + 180 * pct) * Math.PI / 180;
     const valX = (cx + r * Math.cos(valAngleRad)).toFixed(1);
     const valY = (cy + r * Math.sin(valAngleRad)).toFixed(1);
@@ -292,24 +288,19 @@ function _renderGauge(item) {
 
     return '<div class="gauge-container">' +
         '<svg width="160" height="94" viewBox="0 0 160 94">' +
-            // Background arc (full 180°)
             '<path d="M ' + startX + ' ' + arcY +
                 ' A ' + r + ' ' + r + ' 0 0 1 ' + endX + ' ' + arcY + '" ' +
                 'fill="none" stroke="rgba(30,58,138,0.5)" stroke-width="7" stroke-linecap="round"/>' +
-            // Value arc
             (showArc
                 ? '<path d="M ' + startX + ' ' + arcY +
                     ' A ' + r + ' ' + r + ' 0 0 1 ' + valX + ' ' + valY + '" ' +
                     'fill="none" stroke="var(--status-color,#3b82f6)" stroke-width="7" stroke-linecap="round"/>'
                 : '') +
-            // Tick at current value
             (showArc
                 ? '<circle cx="' + valX + '" cy="' + valY + '" r="4" fill="var(--status-color,#3b82f6)"/>'
                 : '') +
-            // Min label
             '<text x="' + (cx - r - 4) + '" y="88" text-anchor="end" fill="#64748b" font-size="9">' +
                 item.min + '</text>' +
-            // Max label
             '<text x="' + (cx + r + 4) + '" y="88" text-anchor="start" fill="#64748b" font-size="9">' +
                 item.max + '</text>' +
         '</svg>' +
