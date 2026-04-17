@@ -1,10 +1,6 @@
 const EMAIL_SENDER = "glennimmanuel8@gmail.com";
 
 const INFLUX_CONFIG = {
-    url:      'https://us-east-1-1.aws.cloud2.influxdata.com',
-    token:    't7mHH51CeVE-GbG2SwRDEzcbjvsHFZw6PDJX78WQTEPFZYDdR_KgduTihf0sF2BFI54H3FEcAI4hMOCvhnmcqw==',
-    org:      'kideco',
-    bucket:   'monitoring_cloud_v2',
     proxyUrl: 'https://odd-leaf-0456.glennimmanuel8.workers.dev/'
 };
 
