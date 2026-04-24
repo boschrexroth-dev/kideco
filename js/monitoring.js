@@ -12,44 +12,6 @@ function initializeDashboard() {
     }
 }
 
-function updateMonitoringData(data) {
-    if (!data || typeof data !== 'object') return;
-    const motorName = data.Name || 'Unknown';
-    const type      = guessType(data);
-    const config    = parameterConfig[type] || parameterConfig['Electric Motor'];
-
-    if (!monitoringDataByMotor[motorName]) {
-        monitoringDataByMotor[motorName] = [];
-        Object.keys(config).forEach(key => {
-            monitoringDataByMotor[motorName].push({
-                id: `${motorName}.${key}`,
-                name: `${motorName} - ${key}`,
-                value: 0, unit: config[key].unit,
-                min: config[key].min, max: config[key].max,
-                status: 'normal', history: []
-            });
-        });
-        refreshMotorDropdown();
-    }
-
-    monitoringDataByMotor[motorName].forEach(param => {
-        const key = param.name.split(' - ')[1];
-        const mk  = findMatchingDataKey(data, key);
-        if (mk) {
-            const val = parseFloat(data[mk]);
-            if (!isNaN(val)) {
-                param.value = val;
-                param.history.push(val);
-                if (param.history.length > 10) param.history.shift();
-                updateItemStatus(param);
-            }
-        }
-    });
-
-    updateLastUpdate(data.timestamp || new Date().toISOString());
-    renderDashboard();
-    updateStatusCounts();
-}
 
 function updateItemStatus(item) {
     const prev = item.status;
@@ -149,30 +111,21 @@ function renderDashboard() {
     if (!grid) return;
     grid.innerHTML = '';
 
-    const hasMotorData = Object.keys(monitoringDataByMotor).length > 0;
-    const hasMqttData  = mqttSubscriptions.length > 0;
-
-    if (!hasMotorData && !hasMqttData) {
+    if (!mqttSubscriptions.length) {
         grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#fff;padding:40px;">' +
             'No monitoring data available. Add MQTT topics in Data Sources or wait for incoming data.</div>';
         return;
     }
 
-    Object.keys(monitoringDataByMotor).forEach(motorName => {
-        monitoringDataByMotor[motorName].forEach(item => grid.appendChild(createMonitoringCard(item)));
+    mqttSubscriptions.forEach(sub => {
+        const item = {
+            id: sub.id, name: sub.label, value: sub.value,
+            unit: sub.unit, min: sub.min, max: sub.max,
+            status: sub.status, history: sub.history,
+            isBool: sub.isBool || false
+        };
+        grid.appendChild(createMonitoringCard(item));
     });
-
-    if (hasMqttData) {
-        mqttSubscriptions.forEach(sub => {
-            const item = {
-                id: sub.id, name: sub.label, value: sub.value,
-                unit: sub.unit, min: sub.min, max: sub.max,
-                status: sub.status, history: sub.history,
-                isBool: sub.isBool || false
-            };
-            grid.appendChild(createMonitoringCard(item));
-        });
-    }
 }
 
 function createMonitoringCard(item) {
@@ -311,11 +264,6 @@ function refreshMotorDropdown() {
     const sel = document.getElementById('motorSelector');
     if (!sel) return;
     sel.innerHTML = '';
-    Object.keys(monitoringDataByMotor).forEach(name => {
-        const opt = document.createElement('option');
-        opt.value = opt.textContent = name;
-        sel.appendChild(opt);
-    });
     mqttSubscriptions.forEach(sub => {
         const opt = document.createElement('option');
         opt.value = sub.id; opt.textContent = sub.label;

@@ -52,7 +52,6 @@ function exportAllConfiguration() {
         const exportData = {
             architecture: { components, connections },
             cbm: {
-                parameterConfig, monitoringDataByMotor,
                 globalThresholdRules, globalCriticalThresholds,
                 allNotifications, ruleAlertCounters, mqttSubscriptions
             },
@@ -91,7 +90,6 @@ function importAllConfiguration(file) {
                 if (d.cbm.allNotifications)         allNotifications         = d.cbm.allNotifications;
                 if (d.cbm.ruleAlertCounters)        ruleAlertCounters        = d.cbm.ruleAlertCounters;
                 if (d.cbm.mqttSubscriptions)        mqttSubscriptions        = d.cbm.mqttSubscriptions;
-                monitoringDataByMotor = d.cbm.monitoringDataByMotor || {};
             }
             saveConfigurationToStorage();
             saveArchitectureData();

@@ -250,15 +250,6 @@ function _evalPanelStatus(panel) {
     });
 }
 
-function receiveNodeRedData(data) {
-    if (data && typeof data === 'object') {
-        updateMonitoringData(data);
-        updateConnectionStatus(true);
-        renderDashboard();
-        updateStatusCounts();
-        updateLastUpdate(data.timestamp);
-    }
-}
 
 let _modalRefreshTimer = null;
 

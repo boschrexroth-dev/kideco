@@ -126,39 +126,6 @@ function feedInfluxDataToHistory(rows) {
     if (typeof loadHistoryData === 'function') loadHistoryData(mapped);
 }
 
-function feedInfluxDataToMonitoring(rows) {
-    if (!rows || !rows.length) return;
-    const lastRow = rows[rows.length - 1];
-    const measurement = 'connector_plc';
-
-    if (!monitoringDataByMotor[measurement]) monitoringDataByMotor[measurement] = [];
-
-    Object.keys(lastRow).forEach(key => {
-        if (key === 'time' || key === '_time') return;
-        const val = parseFloat(lastRow[key]);
-        if (isNaN(val)) return;
-
-        let param = monitoringDataByMotor[measurement].find(p => p.name === `${measurement} - ${key}`);
-        if (!param) {
-            param = {
-                id: `${measurement}.${key}`,
-                name: `${measurement} - ${key}`,
-                value: 0, unit: '', min: 0, max: 1,
-                status: 'normal', history: []
-            };
-            monitoringDataByMotor[measurement].push(param);
-        }
-        param.history = rows.slice(-10).map(r => parseFloat(r[key])).filter(v => !isNaN(v));
-        param.value   = val;
-        updateItemStatus(param);
-    });
-
-    refreshMotorDropdown();
-    renderDashboard();
-    updateStatusCounts();
-    updateLastUpdate(new Date().toISOString());
-    updateConnectionStatus(true);
-}
 
 function populateInfluxBucketInfo() {
     const ta = document.getElementById('sqlQueryEditor');

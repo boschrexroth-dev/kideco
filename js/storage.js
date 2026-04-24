@@ -20,8 +20,6 @@ function loadArchitectureData() {
 function saveConfigurationToStorage() {
     try {
         const data = {
-            parameterConfig: runtimeParameterConfig,
-            monitoringDataByMotor,
             globalThresholdRules,
             globalCriticalThresholds,
             allNotifications,
@@ -39,8 +37,6 @@ function loadConfigurationFromStorage() {
         const saved = localStorage.getItem(STORAGE_KEYS.PARAMETER_CONFIG);
         if (saved) {
             const p = JSON.parse(saved);
-            runtimeParameterConfig   = p.parameterConfig         || runtimeParameterConfig;
-            monitoringDataByMotor    = p.monitoringDataByMotor    || {};
             globalThresholdRules     = p.globalThresholdRules     || [];
             globalCriticalThresholds = p.globalCriticalThresholds || [];
             allNotifications         = p.allNotifications         || [];
@@ -58,8 +54,7 @@ function loadConfigurationFromStorage() {
 
 function clearAllMonitoringData() {
     if (!confirm('Hapus semua parameter monitoring? Aksi ini tidak bisa dibatalkan.')) return;
-    monitoringDataByMotor = {};
-    mqttSubscriptions     = [];
+    mqttSubscriptions = [];
     Object.keys(_topicPanelMap).forEach(k => delete _topicPanelMap[k]);
     saveConfigurationToStorage();
     renderDashboard();
@@ -72,19 +67,6 @@ function deleteMonitoringItem(itemId) {
     if (mqttIdx !== -1) {
         removePanel(itemId);
         return;
-    }
-    for (const motorName of Object.keys(monitoringDataByMotor)) {
-        const arr = monitoringDataByMotor[motorName];
-        const idx = arr.findIndex(p => p.id === itemId);
-        if (idx !== -1) {
-            arr.splice(idx, 1);
-            if (arr.length === 0) delete monitoringDataByMotor[motorName];
-            saveConfigurationToStorage();
-            renderDashboard();
-            refreshMotorDropdown();
-            showNotification('Parameter dihapus', 'info');
-            return;
-        }
     }
 }
 
